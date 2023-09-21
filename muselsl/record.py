@@ -43,7 +43,6 @@ def record(
 
     print("Started acquiring data.")
     inlet = StreamInlet(streams[0], max_chunklen=chunk_length)
-    # eeg_time_correction = inlet.time_correction()
 
     print("Looking for a Markers stream...")
     marker_streams = resolve_byprop(
@@ -106,6 +105,8 @@ def record(
         except KeyboardInterrupt:
             break
 
+    t_end = time()
+    print('Finished recording at time t=%.3f' % t_end)
     time_correction = inlet.time_correction()
     print("Time correction: ", time_correction)
 
@@ -136,6 +137,8 @@ def _save(
 ):
     res = np.concatenate(res, axis=0)
     timestamps = np.array(timestamps) + time_correction
+    if last_written_timestamp is not None:
+        last_written_timestamp += time_correction
 
     if dejitter:
         y = timestamps
