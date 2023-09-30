@@ -1,12 +1,13 @@
 import bitstring
+from collections import deque
 import pygatt
 import numpy as np
 from time import time, sleep
-from sys import platform
 import subprocess
 from . import backends
 from . import helper
 from .constants import *
+from .packet_manager import PacketsManager
 
 
 class Muse():
@@ -59,6 +60,7 @@ class Muse():
         self.backend = helper.resolve_backend(backend)
         self.preset = preset
         self.disable_light = disable_light
+        self.eeg_packet_manager = PacketsManager({44: 4, 41: 3, 38: 2, 32: 0, 35: 1}, bad_channels=[44])
 
     def connect(self, interface=None):
         """Connect to the device"""
@@ -294,16 +296,17 @@ class Muse():
                    uint:12,uint:12,uint:12,uint:12,uint:12,uint:12"
 
         res = aa.unpack(pattern)
-        packetIndex = res[0]
+        packet_index = res[0]
         data = res[1:]
         # 12 bits on a 2 mVpp range
         data = 0.48828125 * (np.array(data) - 2048)
-        return packetIndex, data
+        return packet_index, data
 
     def _init_sample(self):
         """initialize array to store the samples"""
         self.timestamps = np.full(5, np.nan)
         self.data = np.zeros((5, 12))
+        self.handles = np.zeros((5, 12))
 
     def _init_ppg_sample(self):
         """ Initialise array to store PPG samples
@@ -351,26 +354,33 @@ class Muse():
         samples are received in this order : 44, 41, 38, 32, 35
         wait until we get 35 and call the data callback
         """
+        # print('handle:', handle)
         if self.first_sample:
             self._init_timestamp_correction()
             self.first_sample = False
 
         timestamp = self.time_func()
-        index = int((handle - 32) / 3)
         tm, d = self._unpack_eeg_channel(data)
+        # print(tm)
 
         if self.last_tm == 0:
             self.last_tm = tm - 1
 
-        self.data[index] = d
-        self.timestamps[index] = timestamp
+        packet = self.eeg_packet_manager.push_data(tm, handle, timestamp, d)
+
+        # print('Is complete? ', packet.is_complete)
+    
         # last data received
-        if handle == 35:
+        if packet.is_complete:
             if tm != self.last_tm + 1:
                 if (tm - self.last_tm) != -65535:  # counter reset
-                    print("missing sample %d : %d" % (tm, self.last_tm))
+                    print("Missing sample %d : %d" % (tm, self.last_tm))
                     # correct sample index for timestamp estimation
                     self.sample_index += 12 * (tm - self.last_tm + 1)
+
+            if tm < self.last_tm and self.last_tm != 65535:
+                print('Packages arrived out of order.')
+                return
 
             self.last_tm = tm
 
@@ -382,20 +392,18 @@ class Muse():
             # We received the first packet as soon as the last timestamp got
             # sampled
             self._update_timestamp_correction(idxs[-1], np.nanmin(
-                self.timestamps))
+                packet.timestamps))
 
             # timestamps are extrapolated backwards based on sampling rate
             # and current time
             timestamps = self.reg_params[1] * idxs + self.reg_params[0]
 
             # push data
-            self.callback_eeg(self.data, timestamps)
+            # print(self.handles)
+            self.callback_eeg(packet.data, timestamps)
 
             # save last timestamp for disconnection timer
-            self.last_timestamp = timestamps[-1]
-
-            # reset sample
-            self._init_sample()
+            self.last_timestamp = timestamp
 
     def _init_control(self):
         """Variable to store the current incoming message."""
