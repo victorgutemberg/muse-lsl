@@ -151,7 +151,7 @@ def stream(
                 name = found_muse['name']
 
         if not eeg_disabled:
-            eeg_info = StreamInfo('Muse', 'EEG', MUSE_NB_EEG_CHANNELS, MUSE_SAMPLING_EEG_RATE, 'float32',
+            eeg_info = StreamInfo('Muse EEG', 'EEG', MUSE_NB_EEG_CHANNELS, MUSE_SAMPLING_EEG_RATE, 'float32',
                                 'Muse%s' % address)
             eeg_info.desc().append_child_value("manufacturer", "Muse")
             eeg_channels = eeg_info.desc().append_child("channels")
@@ -165,7 +165,7 @@ def stream(
             eeg_outlet = StreamOutlet(eeg_info, LSL_EEG_CHUNK)
 
         if ppg_enabled:
-            ppg_info = StreamInfo('Muse', 'PPG', MUSE_NB_PPG_CHANNELS, MUSE_SAMPLING_PPG_RATE,
+            ppg_info = StreamInfo('Muse PPG', 'PPG', MUSE_NB_PPG_CHANNELS, MUSE_SAMPLING_PPG_RATE,
                                 'float32', 'Muse%s' % address)
             ppg_info.desc().append_child_value("manufacturer", "Muse")
             ppg_channels = ppg_info.desc().append_child("channels")
@@ -179,7 +179,7 @@ def stream(
             ppg_outlet = StreamOutlet(ppg_info, LSL_PPG_CHUNK)
 
         if acc_enabled:
-            acc_info = StreamInfo('Muse', 'ACC', MUSE_NB_ACC_CHANNELS, MUSE_SAMPLING_ACC_RATE,
+            acc_info = StreamInfo('Muse ACC', 'ACC', MUSE_NB_ACC_CHANNELS, MUSE_SAMPLING_ACC_RATE,
                                 'float32', 'Muse%s' % address)
             acc_info.desc().append_child_value("manufacturer", "Muse")
             acc_channels = acc_info.desc().append_child("channels")
@@ -193,7 +193,7 @@ def stream(
             acc_outlet = StreamOutlet(acc_info, LSL_ACC_CHUNK)
 
         if gyro_enabled:
-            gyro_info = StreamInfo('Muse', 'GYRO', MUSE_NB_GYRO_CHANNELS, MUSE_SAMPLING_GYRO_RATE,
+            gyro_info = StreamInfo('Muse GYRO', 'GYRO', MUSE_NB_GYRO_CHANNELS, MUSE_SAMPLING_GYRO_RATE,
                                 'float32', 'Muse%s' % address)
             gyro_info.desc().append_child_value("manufacturer", "Muse")
             gyro_channels = gyro_info.desc().append_child("channels")
