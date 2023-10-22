@@ -220,7 +220,6 @@ class Muse():
             return
 
         self.first_sample = True
-        self._init_sample()
         self._init_ppg_sample()
         self.last_tm = 0
         self.last_tm_ppg = 0
@@ -301,12 +300,6 @@ class Muse():
         # 12 bits on a 2 mVpp range
         data = 0.48828125 * (np.array(data) - 2048)
         return packet_index, data
-
-    def _init_sample(self):
-        """initialize array to store the samples"""
-        self.timestamps = np.full(5, np.nan)
-        self.data = np.zeros((5, 12))
-        self.handles = np.zeros((5, 12))
 
     def _init_ppg_sample(self):
         """ Initialise array to store PPG samples
@@ -602,10 +595,10 @@ class Muse():
         aa = bitstring.Bits(bytes=packet)
         pattern = "uint:16,uint:24,uint:24,uint:24,uint:24,uint:24,uint:24"
         res = aa.unpack(pattern)
-        packetIndex = res[0]
+        packet_index = res[0]
         data = res[1:]
 
-        return packetIndex, data
+        return packet_index, data
     
     def _disable_light(self):
         self._write_cmd_str('L0')
